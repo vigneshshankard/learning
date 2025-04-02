@@ -1,0 +1,27 @@
+# Node.js dependencies
+node_modules/
+
+# Coverage reports
+coverage/
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Test output
+jest-html-reporters-*.html

@@ -18,6 +18,13 @@ const AnalyticsBasic = sequelize.define('AnalyticsBasic', {
   last5Scores: {
     type: DataTypes.ARRAY(DataTypes.FLOAT),
     allowNull: true,
+    validate: {
+      isNumbersArray(value) {
+        if (value && !value.every(item => typeof item === 'number')) {
+          throw new Error('All array elements must be numbers');
+        }
+      }
+    }
   },
   avgAccuracy: {
     type: DataTypes.FLOAT,

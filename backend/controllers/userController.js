@@ -14,12 +14,16 @@ async function register(req, res) {
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) return res.status(400).json({ message: 'Email already exists' });
 
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    const newUser = await User.create({ email, passwordHash, role: ROLES.REGULAR });
+    const newUser = await User.create({ email, password, role: ROLES.REGULAR });
 
     res.status(201).json({ message: 'User registered successfully', userId: newUser.id });
   } catch (error) {
-    res.status(500).json({ message: 'Internal server error', error });
+    console.error('Register Error:', error);
+    res.status(500).json({
+      message: 'Internal server error',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'test' ? error.stack : undefined
+    });
   }
 }
 
@@ -30,13 +34,26 @@ async function login(req, res) {
     const user = await User.findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordValid) return res.status(401).json({ message: 'Invalid credentials' });
+    console.log('Comparing passwords:', {
+      inputPassword: password,
+      storedHash: user.password
+    });
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('Password comparison result:', isPasswordValid);
+    if (!isPasswordValid) {
+      console.error('Password comparison failed for user:', user.email);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
     const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
     res.status(200).json({ message: 'Login successful', token });
   } catch (error) {
-    res.status(500).json({ message: 'Internal server error', error });
+    console.error('Login Error:', error);
+    res.status(500).json({
+      message: 'Internal server error',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'test' ? error.stack : undefined
+    });
   }
 }
 
@@ -103,8 +120,8 @@ async function resetPassword(req, res) {
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    user.passwordHash = passwordHash;
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    user.password = hashedPassword;
     await user.save();
 
     // Invalidate the token
